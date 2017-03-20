@@ -6168,23 +6168,39 @@ VKAPI_ATTR VkResult VKAPI_CALL CreateBufferView(VkDevice device, const VkBufferV
 }
 
 // Access helper functions for external modules
-const VkFormatProperties *GetFormatProperties(core_validation::layer_data *device_data, VkFormat format) {
-    VkFormatProperties *format_properties = new VkFormatProperties;
+void GetFormatProperties(core_validation::layer_data *device_data, VkFormat format, VkFormatProperties *format_properties) {
     instance_layer_data *instance_data =
         GetLayerDataPtr(get_dispatch_key(device_data->instance_data->instance), instance_layer_data_map);
     instance_data->dispatch_table.GetPhysicalDeviceFormatProperties(device_data->physical_device, format, format_properties);
-    return format_properties;
 }
 
-const VkImageFormatProperties *GetImageFormatProperties(core_validation::layer_data *device_data, VkFormat format,
-                                                        VkImageType image_type, VkImageTiling tiling, VkImageUsageFlags usage,
-                                                        VkImageCreateFlags flags) {
-    VkImageFormatProperties *image_format_properties = new VkImageFormatProperties;
+VkFormatFeatureFlags GetFormatProperties(core_validation::layer_data *device_data, IMAGE_STATE *image_state) {
+    VkFormat format = image_state->createInfo.format;
+    VkFormatProperties format_properties = {};
+    GetFormatProperties(device_data, format, &format_properties);
+
+    VkFormatFeatureFlags flags = 0;
+    switch (image_state->createInfo.tiling) {
+        case VK_IMAGE_TILING_OPTIMAL:
+            flags = format_properties.optimalTilingFeatures;
+            break;
+        case VK_IMAGE_TILING_LINEAR:
+            flags = format_properties.linearTilingFeatures;
+            break;
+        default:
+            assert(false);
+            break;
+    }
+    return flags;
+}
+
+void GetImageFormatProperties(core_validation::layer_data *device_data, VkFormat format, VkImageType image_type,
+                              VkImageTiling tiling, VkImageUsageFlags usage, VkImageCreateFlags flags,
+                              VkImageFormatProperties *image_format_properties) {
     instance_layer_data *instance_data =
         GetLayerDataPtr(get_dispatch_key(device_data->instance_data->instance), instance_layer_data_map);
     instance_data->dispatch_table.GetPhysicalDeviceImageFormatProperties(device_data->physical_device, format, image_type, tiling,
                                                                          usage, flags, image_format_properties);
-    return image_format_properties;
 }
 
 const debug_report_data *GetReportData(const core_validation::layer_data *device_data) { return device_data->report_data; }
