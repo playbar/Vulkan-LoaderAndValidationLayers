@@ -1774,6 +1774,37 @@ bool PreCallValidateCmdBlitImage(layer_data *device_data, GLOBAL_CB_NODE *cb_nod
         skip |= ValidateCmd(device_data, cb_node, CMD_BLITIMAGE, "vkCmdBlitImage()");
         skip |= insideRenderPass(device_data, cb_node, "vkCmdBlitImage()", VALIDATION_ERROR_01300);
 
+        VkFormatFeatureFlags src_format_features = GetFormatProperties(device_data, src_image_state);
+        if ((src_format_features & VK_FORMAT_FEATURE_BLIT_SRC_BIT) == 0) {
+            skip |= log_msg(report_data, VK_DEBUG_REPORT_ERROR_BIT_EXT, VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT,
+                            reinterpret_cast<uint64_t>(cb_node->commandBuffer), __LINE__, VALIDATION_ERROR_01290, "IMAGE",
+                            "vkCmdBlitImage(): srcImage format %s does not support VK_FORMAT_FEATURE_BLIT_SRC_BIT. %s",
+                            string_VkFormat(src_image_state->createInfo.format), validation_error_map[VALIDATION_ERROR_01290]);
+        }
+        if ((filter == VK_FILTER_LINEAR) && ((src_format_features & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT) == 0)) {
+            skip |= log_msg(
+                report_data, VK_DEBUG_REPORT_ERROR_BIT_EXT, VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT,
+                reinterpret_cast<uint64_t>(cb_node->commandBuffer), __LINE__, VALIDATION_ERROR_02196, "IMAGE",
+                "vkCmdBlitImage(): srcImage format %s does not support VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT. %s",
+                string_VkFormat(src_image_state->createInfo.format), validation_error_map[VALIDATION_ERROR_02196]);
+        }
+        if ((filter == VK_FILTER_CUBIC_IMG) &&
+            ((src_format_features & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG) == 0)) {
+            skip |= log_msg(
+                report_data, VK_DEBUG_REPORT_ERROR_BIT_EXT, VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT,
+                reinterpret_cast<uint64_t>(cb_node->commandBuffer), __LINE__, VALIDATION_ERROR_02197, "IMAGE",
+                "vkCmdBlitImage(): srcImage format %s does not support VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG. %s",
+                string_VkFormat(src_image_state->createInfo.format), validation_error_map[VALIDATION_ERROR_02197]);
+        }
+
+        VkFormatFeatureFlags dst_format_features = GetFormatProperties(device_data, dst_image_state);
+        if ((dst_format_features & VK_FORMAT_FEATURE_BLIT_DST_BIT) == 0) {
+            skip |= log_msg(report_data, VK_DEBUG_REPORT_ERROR_BIT_EXT, VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT,
+                            reinterpret_cast<uint64_t>(cb_node->commandBuffer), __LINE__, VALIDATION_ERROR_02185, "IMAGE",
+                            "vkCmdBlitImage(): dstImage format %s does not support VK_FORMAT_FEATURE_BLIT_DST_BIT. %s",
+                            string_VkFormat(dst_image_state->createInfo.format), validation_error_map[VALIDATION_ERROR_02185]);
+        }
+
         for (uint32_t i = 0; i < regionCount; i++) {
             // Warn for zero-sized regions
             if ((pRegions[i].srcOffsets[0].x == pRegions[i].srcOffsets[1].x) ||
