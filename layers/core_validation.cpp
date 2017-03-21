@@ -6174,13 +6174,15 @@ void GetFormatProperties(core_validation::layer_data *device_data, VkFormat form
     instance_data->dispatch_table.GetPhysicalDeviceFormatProperties(device_data->physical_device, format, format_properties);
 }
 
+// for an Image's format and tiling, return the VkFormatFeatureFlags.
 VkFormatFeatureFlags GetFormatProperties(core_validation::layer_data *device_data, IMAGE_STATE *image_state) {
-    VkFormat format = image_state->createInfo.format;
+    const VkImageCreateInfo &image_create_info = image_state->createInfo;
+    VkFormat format = image_create_info.format;
     VkFormatProperties format_properties = {};
     GetFormatProperties(device_data, format, &format_properties);
 
     VkFormatFeatureFlags flags = 0;
-    switch (image_state->createInfo.tiling) {
+    switch (image_create_info.tiling) {
         case VK_IMAGE_TILING_OPTIMAL:
             flags = format_properties.optimalTilingFeatures;
             break;
